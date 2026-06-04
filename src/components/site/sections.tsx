@@ -89,6 +89,23 @@ function useGsapScrollProgress<T extends HTMLElement>() {
   return { ref, progress };
 }
 
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(query.matches);
+
+    update();
+    query.addEventListener("change", update);
+
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
+
+
 function AlternatingSection({
   id,
   eyebrow,
@@ -213,7 +230,7 @@ function MagneticCta({
       onMouseMove={handleMove}
       onMouseLeave={reset}
       className={cn(
-        "premium-cta inline-flex will-change-transform items-center justify-center rounded-full px-7 py-4 text-base font-semibold transition duration-500",
+        "premium-cta inline-flex w-full will-change-transform items-center justify-center rounded-full px-7 py-4 text-base font-semibold transition duration-500 sm:w-auto",
         dark
           ? "bg-gold text-charcoal shadow-[0_0_38px_rgba(180,138,74,0.28)] hover:bg-gold-soft"
           : "bg-primary text-primary-foreground shadow-elegant hover:bg-italian-green-deep",
@@ -226,13 +243,14 @@ function MagneticCta({
 
 export function Hero() {
   const ref = useRef<HTMLElement | null>(null);
+  const isDesktop = useIsDesktop();
   const reduceMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
   const smooth = useSpring(scrollYProgress, { stiffness: 80, damping: 24, mass: 0.35 });
-  const contentScale = useTransform(smooth, [0, 1], [1.15, 1]);
+  const contentScale = useTransform(smooth, [0, 1], isDesktop ? [1.15, 1] : [1, 1]);
   const contentOpacity = useTransform(smooth, [0, 0.85], [1, 0.28]);
   const meshY = useTransform(smooth, [0, 1], [0, -85]);
   const imageY = useTransform(smooth, [0, 1], [0, -42]);
@@ -240,7 +258,7 @@ export function Hero() {
   return (
     <section
       ref={ref}
-      className="hero-cinema relative flex min-h-screen overflow-hidden bg-cream pt-28 text-foreground"
+      className="hero-cinema relative flex min-h-screen overflow-hidden bg-cream pt-24 text-foreground sm:pt-28"
     >
       <motion.div
         className="premium-mesh pointer-events-none absolute inset-0"
@@ -248,26 +266,28 @@ export function Hero() {
       />
       <div className="noise-overlay pointer-events-none absolute inset-0" />
       <motion.div
-        className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-12 px-6 pb-16 lg:grid-cols-12 lg:px-10"
-        style={reduceMotion ? undefined : { scale: contentScale, opacity: contentOpacity }}
+       className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-10 px-5 pb-16 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:px-10"
+        style={
+          reduceMotion ? undefined : { scale: contentScale, opacity: isDesktop ? contentOpacity : 1 }
+        }
       >
         <div className="lg:col-span-7">
-          <p className="inline-flex items-center gap-3 rounded-full border border-gold/35 bg-cream/70 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.22em] text-gold shadow-card backdrop-blur-xl">
+          <p className="inline-flex max-w-full items-center gap-3 rounded-full border border-gold/35 bg-cream/70 px-4 py-1.5 text-[0.68rem] font-medium uppercase tracking-[0.16em] text-gold shadow-card backdrop-blur-xl sm:text-xs sm:tracking-[0.22em]">
             <span className="h-1.5 w-1.5 rounded-full bg-gold" />
             Crafted in Italy. Made for India.
           </p>
-          <h1 className="mt-7 max-w-5xl font-display text-[clamp(3.3rem,8vw,7.4rem)] font-semibold leading-[0.88] text-primary">
+           <h1 className="mt-7 max-w-5xl text-balance font-display text-[clamp(2.85rem,15vw,7.4rem)] font-semibold leading-[0.9] text-primary sm:text-[clamp(3.3rem,8vw,7.4rem)] sm:leading-[0.88]">
             Authentic Italian pizza dough for serious kitchens.
           </h1>
           <p className="mt-8 max-w-2xl text-lg leading-relaxed text-charcoal/72 md:text-xl">
             Long-fermented frozen dough engineered for restaurants, cloud kitchens and pizza brands
             that need premium consistency without daily production drag.
           </p>
-          <div className="mt-10 flex flex-wrap items-center gap-4">
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <MagneticCta to="/sample">Request Free Sample</MagneticCta>
             <Link
               to="/contact"
-              className="inline-flex rounded-full border border-foreground/15 bg-cream/55 px-7 py-4 text-base font-semibold text-foreground backdrop-blur-xl transition hover:border-primary hover:text-primary"
+              className="inline-flex w-full justify-center rounded-full border border-foreground/15 bg-cream/55 px-7 py-4 text-base font-semibold text-foreground backdrop-blur-xl transition hover:border-primary hover:text-primary sm:w-auto"
             >
               Talk to Sales
             </Link>
@@ -276,7 +296,7 @@ export function Hero() {
 
         <motion.div
           className="relative lg:col-span-5"
-          style={reduceMotion ? undefined : { y: imageY }}
+           style={reduceMotion || !isDesktop ? undefined : { y: imageY }}
         >
           <div className="glass-panel overflow-hidden p-2 shadow-[0_34px_120px_-50px_rgba(15,59,46,0.65)]">
             <img
@@ -450,11 +470,11 @@ export function Products() {
           </h2>
         </div>
 
-        <div className="mt-16 space-y-[-4rem] pb-20 max-lg:space-y-6 max-lg:pb-0">
+        <div className="mt-12 space-y-6 pb-0 lg:mt-16 lg:space-y-[-4rem] lg:pb-20">
           {cards.map((card, index) => (
             <motion.article
               key={card.name}
-              className="product-sticky-card glass-panel relative min-h-[28rem] p-8 text-cream shadow-[0_40px_140px_-70px_rgba(0,0,0,0.95)] lg:sticky lg:p-10"
+              className="product-sticky-card glass-panel relative min-h-0 p-6 text-cream shadow-[0_40px_140px_-70px_rgba(0,0,0,0.95)] sm:p-8 lg:sticky lg:min-h-[28rem] lg:p-10"
               style={{ top: `calc(6rem + ${index * 1.25}rem)`, zIndex: index + 1 }}
               initial={{ opacity: 0, y: 60, scale: 0.96 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 - index * 0.015 }}
@@ -464,21 +484,27 @@ export function Products() {
               <div className="flex flex-wrap items-start justify-between gap-6">
                 <div>
                   <p className="text-xs uppercase tracking-[0.25em] text-gold">{card.series}</p>
-                  <h3 className="mt-3 font-display text-5xl font-medium">{card.name}</h3>
+                   <h3 className="mt-3 font-display text-[clamp(2.1rem,10vw,3rem)] font-medium leading-none sm:text-5xl">
+                    {card.name}
+                  </h3>
                 </div>
                 <span className="rounded-full border border-cream/20 bg-cream/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-cream/80 backdrop-blur-xl">
                   {card.badge}
                 </span>
               </div>
-              <div className="mt-10 grid gap-5 border-y border-cream/12 py-8 sm:grid-cols-2">
+              <div className="mt-8 grid gap-5 border-y border-cream/12 py-6 sm:grid-cols-2 lg:mt-10 lg:py-8">
                 <div>
-                  <p className="font-display text-5xl text-gold">{card.fermentation}</p>
+                  <p className="font-display text-[clamp(2.25rem,11vw,3rem)] leading-none text-gold">
+                    {card.fermentation}
+                  </p>
                   <p className="mt-2 text-xs uppercase tracking-[0.22em] text-cream/55">
                     Fermentation
                   </p>
                 </div>
                 <div>
-                  <p className="font-display text-5xl text-gold">{card.hydration}</p>
+                   <p className="font-display text-[clamp(2.25rem,11vw,3rem)] leading-none text-gold">
+                    {card.hydration}
+                  </p>
                   <p className="mt-2 text-xs uppercase tracking-[0.22em] text-cream/55">
                     Spec range
                   </p>
@@ -678,6 +704,7 @@ export function WhyUs() {
 
 export function Testimonials() {
   const ref = useRef<HTMLElement | null>(null);
+  const isDesktop = useIsDesktop();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const speeds = [
     useTransform(scrollYProgress, [0, 1], [42, -34]),
@@ -719,7 +746,7 @@ export function Testimonials() {
             <motion.figure
               key={name}
               className="glass-panel flex h-full flex-col p-8 shadow-card"
-              style={{ y: speeds[index] }}
+              style={isDesktop ? { y: speeds[index] } : undefined}
               whileHover={{ scale: 1.025, y: 0 }}
               transition={{ duration: 0.45, ease: revealEase }}
             >
@@ -764,17 +791,19 @@ export function Industries() {
             <em className="font-light">pizza program.</em>
           </h2>
         </div>
-        <div className="mt-14 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:mt-14 sm:grid-cols-3 lg:grid-cols-4">
           {items.map((item, index) => (
             <motion.div
               key={item}
-              className="glass-panel group p-7 shadow-card transition hover:-translate-y-1 hover:shadow-elegant"
+              className="glass-panel group p-6 shadow-card transition hover:-translate-y-1 hover:shadow-elegant sm:p-7"
               initial={{ opacity: 0, y: 32 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.7, delay: index * 0.045, ease: revealEase }}
             >
-              <p className="font-display text-2xl font-medium text-primary">{item}</p>
+               <p className="font-display text-[clamp(1.35rem,7vw,1.5rem)] font-medium leading-tight text-primary">
+                {item}
+              </p>
               <p className="mt-2 text-sm text-foreground/60 transition group-hover:text-primary">
                 Designed for scale
               </p>
@@ -810,7 +839,7 @@ export function LaunchProgram() {
         style={{ background: spotlightBackground }}
       />
       <motion.div
-        className="relative mx-auto grid max-w-7xl gap-12 px-6 lg:grid-cols-12 lg:px-10"
+        className="relative mx-auto grid max-w-7xl gap-10 px-5 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:px-10"
         initial={{ opacity: 0, scale: 0.96 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, amount: 0.3 }}
@@ -837,14 +866,14 @@ export function LaunchProgram() {
           {services.map((service, index) => (
             <motion.li
               key={service}
-              className="glass-panel flex items-baseline gap-4 bg-italian-green-deep/58 p-6 text-cream"
+              className="glass-panel flex items-baseline gap-4 bg-italian-green-deep/58 p-5 text-cream sm:p-6"
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.4 }}
               transition={{ duration: 0.7, delay: index * 0.06, ease: revealEase }}
             >
               <span className="font-display text-sm text-gold">0{index + 1}</span>
-              <span className="font-display text-lg">{service}</span>
+               <span className="font-display text-base leading-tight sm:text-lg">{service}</span>
             </motion.li>
           ))}
         </ul>
@@ -864,10 +893,10 @@ export function Delivery() {
       body="Today our trucks run -18 C across the entire Delhi NCR region. Pan-India coverage is in motion."
       direction="right"
     >
-      <div className="glass-panel relative aspect-[4/3] overflow-hidden bg-beige/70 p-8 shadow-card">
+      <div className="glass-panel relative overflow-hidden bg-beige/70 p-4 shadow-card sm:p-6 lg:p-8">
         <svg
           viewBox="0 0 400 320"
-          className="h-full w-full"
+          className="aspect-[4/3] w-full"
           role="img"
           aria-label="Delhi NCR delivery coverage map"
         >
@@ -905,11 +934,11 @@ export function Delivery() {
             </g>
           ))}
         </svg>
-        <div className="absolute bottom-6 left-6 right-6 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2 lg:absolute lg:bottom-6 lg:left-6 lg:right-6 lg:mt-0">
           {cities.map((city) => (
             <span
               key={city}
-              className="rounded-full border border-primary/20 bg-cream/80 px-4 py-2 text-sm font-medium text-primary backdrop-blur-xl"
+              className="rounded-full border border-primary/20 bg-cream/80 px-3 py-1.5 text-xs font-medium text-primary backdrop-blur-xl sm:px-4 sm:py-2 sm:text-sm"
             >
               {city}
             </span>
@@ -924,7 +953,7 @@ export function Certifications() {
   const certs = ["FSSAI", "HACCP", "ISO 22000", "Quality Tested"];
 
   return (
-    <section className="border-y border-border bg-beige py-18">
+    <section className="border-y border-border bg-beige py-16 sm:py-18">
       <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <div className="grid items-center gap-8 md:grid-cols-2">
           <p className="font-display text-2xl font-normal text-primary md:text-3xl">
@@ -934,7 +963,7 @@ export function Certifications() {
             {certs.map((cert, index) => (
               <motion.li
                 key={cert}
-                className="glass-panel flex items-center gap-3 px-5 py-2.5 shadow-card"
+                className="glass-panel flex items-center gap-2.5 px-4 py-2.5 shadow-card sm:gap-3 sm:px-5"
                 initial={{ opacity: 0, filter: "blur(12px)", scale: 0.95 }}
                 whileInView={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
                 viewport={{ once: true, amount: 0.5 }}
@@ -962,7 +991,7 @@ export function SampleCTA() {
       <div className="premium-dark-mesh pointer-events-none absolute inset-0" />
       <div className="noise-overlay pointer-events-none absolute inset-0 opacity-35" />
       <motion.div
-        className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 lg:grid-cols-12 lg:px-10"
+        className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:px-10"
         initial={{ opacity: 0, scale: 0.9 }}
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, amount: 0.35 }}
@@ -970,7 +999,7 @@ export function SampleCTA() {
       >
         <div className="lg:col-span-7">
           <p className="text-xs uppercase tracking-[0.25em] text-gold">Try before you commit</p>
-          <h2 className="mt-4 font-display text-[clamp(3rem,7vw,7rem)] font-semibold leading-[0.9]">
+          <h2 className="mt-4 text-balance font-display text-[clamp(2.8rem,15vw,7rem)] font-semibold leading-[0.92] sm:text-[clamp(3rem,7vw,7rem)] sm:leading-[0.9]">
             Bring better pizza to the line.
           </h2>
           <p className="mt-8 max-w-2xl text-lg leading-relaxed text-cream/72">
